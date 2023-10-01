@@ -1,6 +1,8 @@
 from typing import Union, Any, Sequence
-
+import dict
 import flask
+
+dict1 = dict
 from flask import Flask, jsonify, render_template, request, json
 from flask_sqlalchemy import SQLAlchemy
 import random
@@ -46,7 +48,6 @@ class Cafe(db.Model):
         return {
             'id': self.id,
             'name': self.name,
-
             'map_url': self.map_url,
             'img_url': self.img_url,
             'location': self.location,
@@ -63,38 +64,65 @@ with app.app_context():
     db.create_all()
 
 
+@app.route('/second_function', methods=['GET'])
+def get_random_cafe():
+    with app.app_context():
+        response = db.session.execute(select(Cafe).where(Cafe.id == 5))
+        response2 = db.session.execute(select(Cafe))
+        result = db.session.execute(db.select(Cafe))
+
+        all_cafes1 = result.scalars().all()
+        serial_list = []
+        for Row in all_cafes1:
+            data = {'id': Row.id,
+                    'name': Row.name,
+                    'map': Row.map_url,
+                    'img_url': Row.img_url,
+                    'location': Row.location}
+            serial_list.append(data)
+        print(serial_list)
+        # return (all_cafes1[20].location)
+        return jsonify(cafe=serial_list)
+
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+    get_random_cafe()
+    return render_template("index.html", get=get_random_cafe())
 
 
 @app.route('/random', methods=["GET"])
 def random_cafe():
-    result = db.session.execute(db.select(Cafe))
-    all_cafes = result.scalars().all()
-    random_cafe = random.choice(all_cafes)
+    result = db.session.execute(db.select(Cafe))  # <class 'sqlalchemy.engine.result.ChunkedIteratorResult'>
+
+    all_cafes_list = result.scalars().all()  # list
+
+    rand_cafe = random.choice(all_cafes_list)
 
     return jsonify(cafe={
         # Omit the id from the response
-        # "id": random_cafe.id,
-        "name": random_cafe.name,
-        "map_url": random_cafe.map_url,
-        "img_url": random_cafe.img_url,
-        "location": random_cafe.location})
+        # "id": rand_cafe.id,
+        "name": rand_cafe.name,
+        "map_url": rand_cafe.map_url,
+        "img_url": rand_cafe.img_url,
+        "location": rand_cafe.location})
 
     # # Put some properties in a sub-category
     # "amenities": {
-    #     "seats": random_cafe.seats,
-    #     "has_toilet": random_cafe.has_toilet,
-    #     "has_wifi": random_cafe.has_wifi,
-    #     "has_sockets": random_cafe.has_sockets,
-    #     "can_take_calls": random_cafe.can_take_calls,
-    #     "coffee_price": random_cafe.coffee_price,
+    #     "seats": rand_cafe.seats,
+    #     "has_toilet": rand_cafe.has_toilet,
+    #     "has_wifi": rand_cafe.has_wifi,
+    #     "has_sockets": rand_cafe.has_sockets,
+    #     "can_take_calls": rand_cafe.can_take_calls,
+    #     "coffee_price": rand_cafe.coffee_price,
     # }
 
 
 @app.route('/get_all_cafes', methods=['GET'])
 def all_cafes():
+    data = db.session.execute(db.select(Cafe).filter_by(name='Social - Copeland Road')).scalar_one()
+    print(data.location)
+    cafa_list_object = db.session.execute(db.select(Cafe).order_by(Cafe.id))
     result = Cafe.query.all()
 
     return jsonify([item.serialize() for item in result])
@@ -108,15 +136,6 @@ def all_cafes():
 
 # result = session.execute(
 #     select(User).where(User.id == 5)
-def get_random_cafe():
-    with app.app_context():
-        response = db.session.execute(select(Cafe).where(Cafe.id == 5))
-        response2 = db.session.execute(select(Cafe))
-        result = db.session.execute(db.select(Cafe))
-        all_cafes1 = result.scalars().all()
-        random_cafe = random.choice(all_cafes1)
-    return response
-
 
 ## HTTP GET - Read Record
 
@@ -125,6 +144,7 @@ def get_random_cafe():
 ## HTTP PUT/PATCH - Update Record
 
 ## HTTP DELETE - Delete Record
+
 
 
 if __name__ == '__main__':
