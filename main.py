@@ -1,13 +1,12 @@
 from typing import Union, Any, Sequence
-import dict
+
 import flask
 
-dict1 = dict
 from flask import Flask, jsonify, render_template, request, json
 from flask_sqlalchemy import SQLAlchemy
 import random
 
-from sqlalchemy import select, Row, RowMapping
+from sqlalchemy import select, Row, RowMapping, update
 
 '''
 Install the required packages first: 
@@ -58,10 +57,58 @@ class Cafe(db.Model):
 
 
 # MODEL
+def add_shop():
+    # new_caffe = dict(name1="AROMA", location="haifa")
+    # exists22 = db.session.query(db.where(Cafe.id == 21))
+    # response = db.session.execute(select(Cafe).where(Cafe.id == 5))
+    exists = bool(db.session.query(Cafe).filter_by(name='Ark_CAFE').first())
+    print(exists)
+    if exists == True:
+        try:
+            add_coffee = Cafe(name="CAFFEINE",
+                              map_url="TTTT",
+                              img_url="bbbb",
+                              location="haifa",
+                              seats=22,
+                              has_toilet=True,
+                              has_wifi=True,
+                              has_sockets=True,
+                              can_take_calls=True,
+                              coffee_price=56)
+            db.session.add(add_coffee)
+            db.session.commit()
+        except:
+            print("ALREADY EXIST")
 
 
 with app.app_context():
     db.create_all()
+
+
+@app.route('/update-price/<cafe_id>', methods=['GET'])
+def price_change(cafe_id):
+    coffeeid = request.args.get("id_number")
+    new_price = request.args.get("updated_price")
+    # update_price = db.session.query(Cafe).filter_by(name=coffeeid).first()# NO POSSIBLE TONENTER ID
+    # update_price.coffee_price = new_price
+    # db.session.commit()
+    user_update_price = db.session.execute((db.select(Cafe).where(Cafe.id == coffeeid))).scalar()
+    user_update_price.coffee_price = new_price
+    db.session.commit()
+
+    # update_name = db.session.query(Cafe).filter_by(name='aroma').first()
+    # update_name.name = 'new_aroma'
+
+    # cafe_to_delete = Cafe.query.filter_by(id=22).first()
+    # # Check if the user exists
+    # if cafe_to_delete:
+    #     # Delete the user
+    #     db.session.delete(cafe_to_delete)
+    #     db.session.commit()
+
+    # stmt = (db.update(Cafe).where(Cafe.id == coffeeid).values(coffee_price=new_price))
+    # data_patch = db.session.execute(Cafe).all()
+    return jsonify(changes={'coffee_id': coffeeid, 'new_value': new_price})
 
 
 @app.route('/second_function', methods=['GET'])
@@ -78,9 +125,11 @@ def get_random_cafe():
                     'name': Row.name,
                     'map': Row.map_url,
                     'img_url': Row.img_url,
-                    'location': Row.location}
+                    'location': Row.location,
+                    'coffee_price': Row.coffee_price
+                    }
             serial_list.append(data)
-        print(serial_list)
+        # print(serial_list)
         # return (all_cafes1[20].location)
         return jsonify(cafe=serial_list)
 
@@ -88,6 +137,7 @@ def get_random_cafe():
 @app.route("/")
 def home():
     get_random_cafe()
+    add_shop()
     return render_template("index.html", get=get_random_cafe())
 
 
@@ -109,19 +159,50 @@ def random_cafe():
 
     # # Put some properties in a sub-category
     # "amenities": {
-    #     "seats": rand_cafe.seats,
-    #     "has_toilet": rand_cafe.has_toilet,
-    #     "has_wifi": rand_cafe.has_wifi,
-    #     "has_sockets": rand_cafe.has_sockets,
-    #     "can_take_calls": rand_cafe.can_take_calls,
-    #     "coffee_price": rand_cafe.coffee_price,
+    #     "seats": Row.seats,
+    #     "has_toilet": Row.has_toilet,
+    #     "has_wifi": Row.has_wifi,
+    #     "has_sockets": Row.has_sockets,
+    #     "can_take_calls": Row.can_take_calls,
+    #     "coffee_price": Row.coffee_price,
     # }
 
+
+@app.route('/search/<area>', methods=['GET'])
+def search_cafe_locations(area):
+    # TODO make query search coffies in the same area
+    shops = db.session.execute(select(Cafe).where(Cafe.location == f'{area}'))
+    coffee_shops = shops.scalars().all()
+    l22 = []
+    # print(coffee_shops)
+    for Row in coffee_shops:
+        data = ({'name': Row.name,
+                 "seats": Row.seats,
+                 "has_toilet": Row.has_toilet,
+                 "has_wifi": Row.has_wifi,
+                 "has_sockets": Row.has_sockets,
+                 "can_take_calls": Row.can_take_calls,
+                 "coffee_price": Row.coffee_price,
+                 }
+        )
+        l22.append(data)
+
+    return jsonify(locations=l22)
+
+
+# return jsonify(cafe={"name": shops.name})
+
+# Omit the id from the response
+# "id": rand_cafe.id,
+
+
+# result = session.execute(
+#     select(User).where(User.id == 5)
 
 @app.route('/get_all_cafes', methods=['GET'])
 def all_cafes():
     data = db.session.execute(db.select(Cafe).filter_by(name='Social - Copeland Road')).scalar_one()
-    print(data.location)
+    # print(data.location)
     cafa_list_object = db.session.execute(db.select(Cafe).order_by(Cafe.id))
     result = Cafe.query.all()
 
@@ -144,8 +225,18 @@ def all_cafes():
 ## HTTP PUT/PATCH - Update Record
 
 ## HTTP DELETE - Delete Record
-
+@app.route("/search")
+def get_cafe_at_location():
+    query_location = request.args.get("loc")
+    result = db.session.execute(db.select(Cafe).where(Cafe.location == query_location))
+    # Note, this may get more than one cafe per location
+    all_cafes = result.scalars().all()
+    if all_cafes:
+        return jsonify(cafes=[cafe.to_dict() for cafe in all_cafes])
+    else:
+        return jsonify(error={"Not Found": "Sorry, we don't have a cafe at that location."}), 404
 
 
 if __name__ == '__main__':
     app.run(debug=True)
+from sqlalchemy import update

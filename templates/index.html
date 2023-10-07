@@ -7,10 +7,23 @@
 <body>
     <h1>Welcome to the Cafe & Wifi API</h1>
     <a href="{{ url_for('random_cafe') }}">RANDOM ROW</a>
+    <br>
     <a href="{{ url_for('all_cafes') }}" class="button">CALL ALL DB</a>
-    <a href="{{ url_for('get_random_cafe') }}" class="button">SECOND_FUNCTION</a>
+    <br>
+    <a href="{{ url_for('get_random_cafe') }}" class="button">SPECIAL_FUNCTION</a>
+    <br>
+    <a href="{{ url_for('search_cafe_locations',area='Peckham') }}" class="button">SEARCH SAME LOCATIONS</a>
+    <br>
+    <h2 style="color:blue">UPDATE PRICE (POSTMAN PATCH) </h2>
 
-    {{ get }}
+    <form action="{{ url_for('price_change',cafe_id=8) }}">
+    <label>COFFEE ID </label>
+    <input name="id_number">
+    <label>UPDATED PRICE</label>
+    <input name="updated_price">
+    <input type="submit" value="Submit" style="color:red" >
+    </form>
+
 
 </body>
 </html>
