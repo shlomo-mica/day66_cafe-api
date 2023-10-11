@@ -14,9 +14,12 @@
     <br>
     <a href="{{ url_for('search_cafe_locations',area='Peckham') }}" class="button">SEARCH SAME LOCATIONS</a>
     <br>
+    <a href="{{ url_for('delete_cafe',cafe_id=20) }}">DELETE COFFEE SHOP </a>
+    <br>
     <h2 style="color:blue">UPDATE PRICE (POSTMAN PATCH) </h2>
 
-    <form action="{{ url_for('price_change',cafe_id=8) }}">
+
+    <form action="{{ url_for('price_change') }}">
     <label>COFFEE ID </label>
     <input name="id_number">
     <label>UPDATED PRICE</label>

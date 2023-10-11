@@ -85,14 +85,32 @@ with app.app_context():
     db.create_all()
 
 
-@app.route('/update-price/<cafe_id>', methods=['GET'])
-def price_change(cafe_id):
+@app.route('/report-closed/<cafe_id>', methods=['GET'])
+def delete_cafe(cafe_id):
+    # Fetch the row you want to delete
+    coffee_closed = Cafe.query.filter_by(id=cafe_id).first()
+
+    print("ffff",coffee_closed)
+    # Check if the user exists
+    if coffee_closed:
+        # Delete the user
+        db.session.delete(coffee_closed)
+        db.session.commit()
+        return jsonify(delete={'user':'delete successfully'})
+    else:
+        return jsonify(not_find={'user': 'User not found'})
+
+
+
+@app.route('/update-price/', methods=['GET'])
+def price_change():
     coffeeid = request.args.get("id_number")
     new_price = request.args.get("updated_price")
     # update_price = db.session.query(Cafe).filter_by(name=coffeeid).first()# NO POSSIBLE TONENTER ID
     # update_price.coffee_price = new_price
     # db.session.commit()
     user_update_price = db.session.execute((db.select(Cafe).where(Cafe.id == coffeeid))).scalar()
+
     user_update_price.coffee_price = new_price
     db.session.commit()
 
